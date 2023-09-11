@@ -1,0 +1,278 @@
+print("Loading Ingredients...")
+import shutil
+import os
+from datetime import datetime
+import glob
+import fitz
+import pandas as pd
+
+
+# In[2]:
+
+
+#from toggle_cell import toggle_code as hide_solution
+
+print("Cooking Sauce...")
+
+#Function to read in pdf file
+def Read_pdf(filename):
+    order=[]
+    with fitz.open(filename) as doc:
+        text = ""
+        for page in doc:
+            text += page.get_text()
+        order=text.replace('\n','|')
+    return order
+
+#Function to scrape data from the pdf file based on field relative positions
+def Pdf_DataXtract(pdfile):
+    export = []
+    order = pdfile
+    
+    #PO No.
+    temp = order.find('Contact')
+    temp2 = order.find('|',temp-15)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(order.find('|',temp2+1))])
+    
+    #Create Date
+    temp = order.find('Order Create Date :')
+    temp2 = order.find('|',temp+2)
+    export.append(order[temp+20:temp2])  
+
+    #Cost and Quantity
+    temp = order.find('Cost and Quantity')
+    temp2 = order.find('|',temp+3)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(order.find('|',temp2+1))])
+
+    #Total Value
+    temp = order.find('Cost and Quantity')
+    temp = order.find('|',temp+3)
+    temp2 = order.find('|',temp+3)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(order.find('|',temp2+1))])
+    
+    #Purchase Terms
+    temp = order.find('Terms and Conditions')
+    temp2 = order.find('|',temp+3)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(order.find('|',temp2+1))])
+    
+    #Earliest Handout Date
+    temp = order.find('|',temp2+1)
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp2 = order.find('|',temp+3)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(order.find('|',temp2+1))])
+    
+    #Landing Port
+    temp = order.find('Additional Comments Field:')
+    temp = order.rfind('|',0, temp)
+    temp = order.rfind('|',0, temp)
+    temp = order.rfind('|',0, temp)
+    temp = order.rfind('|',0, temp)
+    temp2 = order.rfind('|',0,temp)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(temp)])
+    
+    #Country of Origin
+    temp = order.find('Additional Comments Field:')
+    temp = order.rfind('|',0, temp)
+    temp = order.rfind('|',0, temp)
+    temp = order.rfind('|',0, temp)
+    temp2 = order.rfind('|',0,temp)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(temp)])
+    
+    #Destination Location
+    temp = order.find('Destination Location :')
+    temp2 = order.find(':',temp+3)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+2):(order.find('|',temp2+1))])
+    
+    #Additional Comments
+    temp = order.find('Additional Comments Field:')
+    temp2 = order.find('|',temp+3)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(order.find('|',temp2+1))])
+    
+    #Product Description
+    temp = order.find('Page 2 of 3')
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp2 = order.find('|',temp+3)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(order.find('|',temp2+1))])
+    
+    #Product Description 24 char
+    temp = order.find('Page 2 of 3')
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp2 = order.find('|',temp+3)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(order.find('|',temp2+1))])
+    
+    #Avg Unit Cost
+    temp = order.find('|',temp2+1)
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp2 = order.find('|',temp+3)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(order.find('|',temp2+1))])
+    
+    #Season code
+    temp = order.find('Page 2 of 3')
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp2 = order.find('|',temp+3)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(order.find('|',temp2+1))])
+    
+    #Order Value
+    temp = order.find('Total Quantity:')
+    temp2 = order.rfind('|',0,temp-3)
+    #print(order[(temp2+1):(order.find('|',temp2+1))])
+    export.append(order[(temp2+1):(temp-1)])
+    
+    #TPND
+    temp = order.rfind('X',0,temp2)
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp2 = order.find('|',temp+2)
+    export.append(order[(temp2+1):(order.find('|',temp2+1))])
+    
+    #TPNB
+    temp = order.find('TPNB')
+    temp = order.find('|',temp+2)
+    temp2 = order.find('|',temp+2)
+    export.append(order[temp+1:temp2])
+    
+    #Single Quantity
+    temp = order.find('Total Quantity:')
+    temp = order.rfind('|',0, temp)
+    temp = order.rfind('|',0, temp)
+    temp = order.rfind('|',0, temp)
+    temp2 = order.rfind('|',0,temp)
+    export.append(order[temp2+1:temp])
+    
+    #Case Size
+    temp = order.rfind('X',0,temp2)
+    temp = order.find('|',temp+2)
+    temp2 = order.find('|',temp+2)
+    export.append(order[temp+1:temp2])
+    
+    #Case Quantity
+    temp = order.find('Total Quantity:')
+    temp = order.rfind('|',0, temp)
+    temp = order.rfind('|',0, temp)
+    temp2 = order.rfind('|',0,temp)
+    export.append(order[temp2+1:temp])
+    
+    #EAN Barcode
+    temp = order.rfind('X',0,temp2)
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp2 = order.find('|',temp+2)
+    export.append(order[temp+1:temp2])
+    
+    #ITF Barcode
+    temp = order.rfind('X',0,temp2)
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp2 = order.find('|',temp+2)
+    export.append(order[temp+1:temp2])
+    
+    #Unit Cost
+    temp = order.find('Carton Dimensions :')
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp2 = order.find('|',temp+2)
+    export.append(order[temp+1:temp2])
+    
+    #HTS
+    temp = order.find('Carton Dimensions :')
+    temp = order.find('|',temp+2)
+    temp = order.find('|',temp+2)
+    temp2 = order.find('|',temp+2)
+    export.append(order[temp+1:temp2])  
+    
+    return export
+
+def Excel_Export(data,fname):
+    df = pd.DataFrame(data)
+    df = df.astype(str)
+    df.to_excel(fname, index=False)
+    print(fname+" cooked successfully!")
+
+#hide_solution()
+
+
+# In[3]:
+
+
+#Current date time to create new folder for holding processed files
+current_date_time = datetime.now()
+folder_name = current_date_time.strftime("%d_%m_%Y_%H_%M")
+
+#File path of the folder with PDF files
+file_path = '//Desktop/data'
+
+#Creates list of files to read in and counts them
+os.chdir('//Desktop/data')
+File_list = glob.glob('*.pdf')
+File_count = len(File_list)
+    
+
+
+# In[4]:
+
+
+if File_count == 0:
+    print("No orders to cook, turning off the burner...")
+    exit()
+else:
+    print("Cooking up "+str(File_count)+" Orders")
+    #Folders to be created to store processed PDF's
+    new_folder = file_path + '/'+folder_name
+    new_folder_pdf = file_path + '/'+folder_name+'/pdf'
+
+    #Creates folders
+    if not os.path.exists(new_folder_pdf):
+        os.makedirs(new_folder_pdf)
+
+    #EDI columns required
+    export = [['PO.No','Order Create Date','Total Quantity','Total Value','Purchase Terms','Earliest Handover Date','Landing Port','Country of Origin','Destination Location','Additional Comments','Product Description','Product Description 24char','Avg Unit Cost','Season Code','Order Value','TPND','TPNB','Single Quantity','Case Size','Case Quantity','EAN Barcode','ITF Barcode','Unit Cost','HTS']]
+    #Export file name
+    exportname = file_path+'/'+folder_name+'_Export.xlsx'
+    exportname2 = '//Desktop/Extract/'+folder_name+'_Export.xlsx'
+
+    #Recursively process files in the directory
+    for i in range(File_count):
+        file = file_path+'/'+File_list[i]
+        order = Read_pdf(file)
+        export.append(Pdf_DataXtract(order))
+    
+        #Moving PDF's to folder
+        old = file_path+'/'+File_list[i]
+        new = new_folder_pdf+'/'+File_list[i]
+        shutil.move(old,new)
+        
+        print("Order "+str((i+1))+" out of "+str(File_count)+" ready to go!")
+
+
+    #Exporting to Excel
+    Excel_Export(export,exportname)
+    Excel_Export(export,exportname2)
+
+    #Moving Processed Excel EDI File to folder
+    old = exportname
+    new = new_folder + '/' + folder_name+'_Export.xlsx'
+    shutil.move(old,new)
